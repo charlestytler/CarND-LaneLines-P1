@@ -15,7 +15,10 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/grayscale.jpg "Grayscale"
+[originalImage]: ./test_images/solidYellowLeft.jpg "Original"
+[cannyImage]: ./test_images_output/solidYellowLeft_cannyEdge.jpg "CannyEdge"
+[groupsImage]: ./test_images_output/solidYellowLeft_groups.jpg "Groups"
+[lanesImage]: ./test_images_output/solidYellowLeft.jpg "Lanes"
 
 ---
 
@@ -38,13 +41,13 @@ Finally, to avoid high frequency effects from noisy line identification a low-pa
 
 
 Original Image:
-![Original image][test_images/solidYellowLeft.jpg]
+![Original image][originalImage]
 Image after Canny edge detection:
-![Image after Canny edge detection][test_images_output/solidYellowLeft_cannyEdge.jpg]
+![Image after Canny edge detection][cannyImage]
 Image with Hough transform detected lines after being organized into groups of similar angle (groups are color coded). The yellow and green groups will be retained as the two with the greatest cumulative line lengths.
-![Image with Hough transform detected lines color coded by groups][test_images_output/solidYellowLeft_groups.jpg]
+![Image with Hough transform detected lines color coded by groups][groupsImage]
 Final image with superimposed lane estimates:
-![Final image with lane estimates][test_images_output/solidYellowLeft.jpg]
+![Final image with lane estimates][lanesImage]
 
 
 
