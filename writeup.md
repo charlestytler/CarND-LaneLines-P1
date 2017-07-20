@@ -1,9 +1,5 @@
 # **Finding Lane Lines on the Road** 
 
-## Writeup Template
-
-### You can use this file as a template for your writeup if you want to submit it as a markdown file. But feel free to use some other method and submit a pdf if you prefer.
-
 ---
 
 **Finding Lane Lines on the Road**
@@ -41,12 +37,19 @@ Finally, to avoid high frequency effects from noisy line identification a low-pa
 
 
 Original Image:
+
 ![Original image][originalImage]
+
 Image after Canny edge detection:
+
 ![Image after Canny edge detection][cannyImage]
+
 Image with Hough transform detected lines after being organized into groups of similar angle (groups are color coded). The yellow and green groups will be retained as the two with the greatest cumulative line lengths.
+
 ![Image with Hough transform detected lines color coded by groups][groupsImage]
+
 Final image with superimposed lane estimates:
+
 ![Final image with lane estimates][lanesImage]
 
 
