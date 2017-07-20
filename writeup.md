@@ -22,7 +22,7 @@ The goals / steps of this project are the following:
 
 ### 1. Describe your pipeline. As part of the description, explain how you modified the draw_lines() function.
 
-My pipeline can be described in 3 stages: line identification, line downselect, and lane estimation.
+My pipeline can be described in 3 stages: Line Identification, Line Downselect, and Lane Estimation.
 
 #### Line Identification
 The first stage is taking advantage of the OpenCV toolset to identify lines in the image. The image is first converted to grayscale and a Gaussian blur is applied to reduce noisy gradients in the image. Then Canny edge detection is applied to the blurred image to isolate all edges in the image. Since the camera perspective is fixed with respect to the vehicle traveling in the lane, we can take advantage of known geometry of the image and mask areas we know lanes won’t exist. We know that the lane lines will be on the ground, so the upper portion of the frame can be ignored (I masked off the upper 60% of the image). We also know that due to perspective, the lanes will angle closer together with distance, so the left and right sides of the image are masked at an angle to help ignore neighboring lanes. Finally, a Hough transform is used to identify straight lines of significant length from the collection of edges in the unmasked region.
@@ -35,6 +35,7 @@ After the lines have been separated into left and right lane groupings, an estim
 
 Finally, to avoid high frequency effects from noisy line identification a low-pass filter was applied to the lane estimates. The x-coordinates and y-coordinates were independently filtered based on their previous value. New measurements which exceeded a pixel distance threshold from the past estimate were rejected outright, and those within the threshold were only gradually incorporated into the lane estimate by only applying a fraction of their provided innovation from the previous estimate. This allowed steady incorporation of changes in the lane as the car travels, but avoids jumpy behavior and ignores outlier lane line measurements.
 
+#### Example Images of Pipeline:
 
 Original Image:
 
@@ -57,7 +58,6 @@ Final image with superimposed lane estimates:
 ### 2. Identify potential shortcomings with your current pipeline
 
 
-Shortcomings:
 Right now my filtering of lanes rejects new measurements if they are too far from past estimates. If the image loses tracking long enough and the actual lanes drift away from past estimates, the estimator won’t be able to recover until the actual lanes come within its threshold again.
 
 Also, the line detection relies on a good contrast between pavement and the lane markings. In situations with poor lighting, dirty roads, or lighter colored pavement it has trouble finding any lines. An example of this is seen in the Challenge video where the car drives over a patch of light-gray pavement and the line detection loses track of the lanes and relies on the past estimates until it regains a valid measurement. Improved performance could possibly be achieved through further adjustments of the Canny edge detection parameters and its preceding steps.
