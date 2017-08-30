@@ -1,53 +1,75 @@
 # **Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
-
-Overview
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+**Finding Lane Lines on the Road**
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
-
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
-
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
+The goals / steps of this project are the following:
+* Make a pipeline that finds lane lines on the road
+* Reflect on your work in a written report
 
 
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
+[//]: # (Image References)
 
-1. Describe the pipeline
+[originalImage]: ./test_images/solidYellowLeft.jpg "Original"
+[cannyImage]: ./test_images_output/solidYellowLeft_cannyEdge.jpg "CannyEdge"
+[groupsImage]: ./test_images_output/solidYellowLeft_groups.jpg "Groups"
+[lanesImage]: ./test_images_output/solidYellowLeft.jpg "Lanes"
 
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
-
-
-The Project
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+### Reflection
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://classroom.udacity.com/nanodegrees/nd013/parts/fbf77062-5703-404e-b60c-95b78b2f3f9e/modules/83ec35ee-1e02-48a5-bdb7-d244bd47c2dc/lessons/8c82408b-a217-4d09-b81d-1bda4c6380ef/concepts/4f1870e0-3849-43e4-b670-12e6f2d4b7a7) if you haven't already.
+### 1. Describe your pipeline. As part of the description, explain how you modified the draw_lines() function.
 
-**Step 2:** Open the code in a Jupyter Notebook
+My pipeline can be described in 3 stages: Line Identification, Line Downselect, and Lane Estimation.
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out <A HREF="https://www.packtpub.com/books/content/basics-jupyter-notebook-and-python" target="_blank">Cyrille Rossant's Basics of Jupyter Notebook and Python</A> to get started.
+#### Line Identification
+The first stage is taking advantage of the OpenCV toolset to identify lines in the image. The image is first converted to grayscale and a Gaussian blur is applied to reduce noisy gradients in the image. Then Canny edge detection is applied to the blurred image to isolate all edges in the image. Since the camera perspective is fixed with respect to the vehicle traveling in the lane, we can take advantage of known geometry of the image and mask areas we know lanes won’t exist. We know that the lane lines will be on the ground, so the upper portion of the frame can be ignored (I masked off the upper 60% of the image). We also know that due to perspective, the lanes will angle closer together with distance, so the left and right sides of the image are masked at an angle to help ignore neighboring lanes. Finally, a Hough transform is used to identify straight lines of significant length from the collection of edges in the unmasked region.
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+#### Line Downselect
+Now that a collection of lines have been identified, they need to be down selected into which ones are representative of the left and right lane markings. So first, the set of all lines are grouped into subsets of lines with similar angles in the image. To allow for possible curvature in the lanes, the lines are compared from bottom of image to top, using the top most line as the reference angle. Any lines within +/-10 degrees of the reference angle are added to the group, lines which are near horizontal (by +/-20 degrees) are removed altogether. After a set of line groupings have been sorted, the two groups with the greatest cumulative line lengths are retained as the left and right lane line groups. This is based on the assumption that within the masked region, the lane markings should be the most prominent lines detected by the Hough transform.
 
-`> jupyter notebook`
+#### Lane Estimation
+After the lines have been separated into left and right lane groupings, an estimate of the full lane boundary can be estimated. For a series of y-axis coordinates (3) ranging from the bottom of the image to the highest y-coordinate which both left and right line groupings reach, an x-coordinate is determined for each lane group. This x-coordinate is the average of the x-values for which each of the nearby lines would pass through if projected to the given y-coordinate. The x-coordinate for the bottom edge of the image is determined by extrapolating from the 2nd from bottom point using the average angle of the lines in the group. This allows some bend in the lane projection for curving lanes.
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+Finally, to avoid high frequency effects from noisy line identification a low-pass filter was applied to the lane estimates. The x-coordinates and y-coordinates were independently filtered based on their previous value. New measurements which exceeded a pixel distance threshold from the past estimate were rejected outright, and those within the threshold were only gradually incorporated into the lane estimate by only applying a fraction of their provided innovation from the previous estimate. This allowed steady incorporation of changes in the lane as the car travels, but avoids jumpy behavior and ignores outlier lane line measurements.
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
+#### Example Images of Pipeline:
 
+Original Image:
+
+![Original image][originalImage]
+
+Image after Canny edge detection:
+
+![Image after Canny edge detection][cannyImage]
+
+Image with Hough transform detected lines after being organized into groups of similar angle (groups are color coded). The yellow and green groups will be retained as the two with the greatest cumulative line lengths.
+
+![Image with Hough transform detected lines color coded by groups][groupsImage]
+
+Final image with superimposed lane estimates:
+
+![Final image with lane estimates][lanesImage]
+
+
+
+### 2. Identify potential shortcomings with your current pipeline
+
+
+Right now my filtering of lanes rejects new measurements if they are too far from past estimates. If the image loses tracking long enough and the actual lanes drift away from past estimates, the estimator won’t be able to recover until the actual lanes come within its threshold again.
+
+Also, the line detection relies on a good contrast between pavement and the lane markings. In situations with poor lighting, dirty roads, or lighter colored pavement it has trouble finding any lines. An example of this is seen in the Challenge video where the car drives over a patch of light-gray pavement and the line detection loses track of the lanes and relies on the past estimates until it regains a valid measurement. Improved performance could possibly be achieved through further adjustments of the Canny edge detection parameters and its preceding steps.
+
+
+### 3. Suggest possible improvements to your pipeline
+
+Some potential means for improving the accuracy of the lane estimates could be:
+* Color filtering -- I did not take advantage of the lane colors which are known to be yellow or white. I did this because I did not want color filtering to add noise that the Canny edge detection would pick up. However, isolating white and yellow colored pixels could aid in lane marking identification.
+* Smart masking -- One could use known camera angles and/or previous lane estimate and a prediction of how the lanes could possibly change or curve further down the road to apply tighter masking.
+* Using independent sensors or information to aid lane prediction. For example, a known steering angle or inertial sensor could give knowledge of future camera perspective, and thus a prediction of future lane position in the image.
+* Use knowledge of pavement marking regulations to create stricter rules for lane line identification, such as minimum and maximum dashed lane line gap lengths.
+* Lane angle -- Right now lines close to horizontal are ignored, but that is the only angle restriction. Stricter angles could be used for line downselection based on knowledge that the car/camera is between the two lane lines or on past lane estimates.
+* Filter improvements -- The measurement rejection logic of my filter could be improved so that it resets if it gets stuck in a state where it is consistently rejecting all new measurements.
+* Curve fitting -- Instead of using straight line segments for the lane boundary estimate, a more accurate representation could be found if a higher order curve were fitted to the measurements.
